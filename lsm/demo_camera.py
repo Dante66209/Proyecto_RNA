@@ -15,18 +15,59 @@ Controles en ventana:
 import argparse
 import collections
 import sys
-import time
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+# Evita que mediapipe cargue tensorflow innecesariamente (acelera el arranque y evita conflictos con NumPy 2.x)
+sys.modules.setdefault("tensorflow", None)
 
 import cv2
 import mediapipe as mp
 import numpy as np
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lsm.features import PALM_ANCHORS
 from lsm.train_dynamic import DynamicBiGRUAttn, SEQ_LEN, normalize_clip_np
 from lsm.train_static import HandGeoResNet
+
+_FONT_CACHE: dict[int, object] = {}
+
+
+def _get_font(px: int):
+    if px in _FONT_CACHE:
+        return _FONT_CACHE[px]
+    from PIL import ImageFont
+
+    for name in ("arialbd.ttf", "arial.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans.ttf"):
+        try:
+            _FONT_CACHE[px] = ImageFont.truetype(name, px)
+            return _FONT_CACHE[px]
+        except OSError:
+            continue
+    _FONT_CACHE[px] = None
+    return None
+
+
+def put_text(img: np.ndarray, text: str, org: tuple[int, int], scale: float, color: tuple[int, int, int], thickness: int = 2):
+    """Dibuja texto sobre el frame BGR con soporte para 'Ñ' mediante Pillow cuando hay caracteres no ASCII."""
+    if text.isascii():
+        cv2.putText(img, text, org, cv2.FONT_HERSHEY_SIMPLEX, scale, color, thickness)
+        return
+    try:
+        from PIL import Image, ImageDraw
+
+        px = max(14, int(round(30 * scale)))
+        font = _get_font(px)
+        if font is not None:
+            pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            draw = ImageDraw.Draw(pil_img)
+            draw.text(org, text, font=font, fill=(color[2], color[1], color[0]), anchor="ls")
+            img[:] = cv2.cvtColor(np.asarray(pil_img), cv2.COLOR_RGB2BGR)
+            return
+    except Exception:
+        pass
+    cv2.putText(img, text.replace("Ñ", "N~").replace("ñ", "n~"), org, cv2.FONT_HERSHEY_SIMPLEX, scale, color, thickness)
 
 
 def resample_buffer(frames: list[np.ndarray], target_len: int = SEQ_LEN) -> np.ndarray:
@@ -56,8 +97,8 @@ def motion_score(frames: list[np.ndarray]) -> float:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--static-ckpt", default="outputs/static/georesnet_best.pt")
-    ap.add_argument("--dynamic-ckpt", default="outputs/dynamic/bigru_attn_best.pt")
+    ap.add_argument("--static-ckpt", default=str(ROOT / "outputs/static/georesnet_best.pt"))
+    ap.add_argument("--dynamic-ckpt", default=str(ROOT / "outputs/dynamic/bigru_attn_best.pt"))
     ap.add_argument("--cam", type=int, default=0)
     ap.add_argument("--motion-thresh", type=float, default=0.55)
     a = ap.parse_args()
@@ -155,12 +196,11 @@ def main():
         cv2.putText(disp, f"LSM | Modo: {modes[mode_idx]} | Mano: {hand_txt} | {source_tag}",
                     (15, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (180, 220, 255), 2)
         color = (80, 230, 120) if current_conf >= 0.7 else (0, 200, 255)
-        cv2.putText(disp, f"Letra: {current_label}  ({current_conf:.0%})",
-                    (15, 72), cv2.FONT_HERSHEY_SIMPLEX, 1.15, color, 3)
+        put_text(disp, f"Letra: {current_label}  ({current_conf:.0%})", (15, 72), 1.15, color, 3)
 
         # Barra inferior para palabra formada
         cv2.rectangle(disp, (0, h - 55), (w, h), (20, 25, 30), -1)
-        cv2.putText(disp, f"Texto: {word}_", (15, h - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (255, 255, 255), 2)
+        put_text(disp, f"Texto: {word}_", (15, h - 18), 0.85, (255, 255, 255), 2)
         cv2.imshow("LSMovil - Reconocimiento en Vivo", disp)
 
         key = cv2.waitKey(1) & 0xFF
