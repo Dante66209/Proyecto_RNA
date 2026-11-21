@@ -1,0 +1,23 @@
+# Entornos virtuales y caché de Python
+.venv_cuda/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Jupyter / IDE / OS
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Datos crudos (~25 GB de Zenodo) y cachés .npz redundantes con data/hf_lsm_dataset/
+data/raw/
+data/landmarks/
+
+# Archivo local con instrucciones de la asignatura
+instrucciones.txt
+DOCUMENTO_LSMOVIL.pdf
+lsmovil.txt

@@ -1,0 +1,6 @@
+tarea,modelo,parametros,test_acc_detectado,deteccion_mp,test_acc_efectivo,test_f1_macro,val_f1_macro,acc_A_det,acc_B_det,acc_C_det,acc_A_efec,acc_B_efec,acc_C_efec,seg_entrenamiento
+Estático (21 letras),MLP-Base (60D crudas),51989,0.9384,0.9895,0.9285,0.9385,0.9700,0.9938,0.9526,0.8670,0.9917,0.9510,0.8433,50.6
+Estático (21 letras),MobileNetV3-Small (CNN RGB),1539381,0.9453,1.0000,0.9453,0.9453,0.9682,0.9943,0.9636,0.8784,0.9943,0.9636,0.8784,547.8
+Estático (21 letras),HandGeoResNet (184D geom.),317829,0.9592,0.9895,0.9492,0.9586,0.9744,0.9988,0.9746,0.9032,0.9967,0.9730,0.8786,151.6
+Dinámico (6 letras),LSTM-Base (63D secuencia),99590,1.0000,1.0000,1.0000,1.0000,0.9895,-,-,-,-,-,-,20.9
+Dinámico (6 letras),DynamicBiGRUAttn (214D esp-temp),637971,1.0000,1.0000,1.0000,1.0000,1.0000,-,-,-,-,-,-,123.4

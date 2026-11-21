@@ -1,0 +1,3 @@
+modelo,params,test_acc,f1_macro,val_f1_macro,mejor_epoca,segundos
+lstm_base,99590,1.0000,1.0000,0.9895,54,20.9
+bigru_attn,637971,1.0000,1.0000,1.0000,33,123.4
